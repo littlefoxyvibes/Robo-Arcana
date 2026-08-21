@@ -1,4 +1,4 @@
-const CACHE_NAME = 'robo-arcana-v1';
+const CACHE_NAME = 'robo-arcana-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -31,7 +31,7 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-  self.clients.claim();
+  return self.clients.claim();
 });
 
 // Fetch Event: Serve cached assets when offline
