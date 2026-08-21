@@ -1676,5 +1676,24 @@ loadGameFromStorage();
 resizeCanvas();
 requestAnimationFrame(gameLoop);
 </script>
+<script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then((registration) => {
+          // Force a check for a updated sw.js file on page load
+          registration.update();
+        });
+
+        // Automatically refresh the page when the new worker takes control
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+          }
+        });
+      });
+    }
+  </script>  
 </body>
 </html>
