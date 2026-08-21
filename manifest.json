@@ -9,7 +9,7 @@
   "start_url": "/",
   "theme_color": "#072eff",
   "id": "com.github.roboarcana",
-  "description": "Robo Arcana"
+  "description": "Robo Arcana",
   "icons": [
     {
       "src": "icon-192.png",
