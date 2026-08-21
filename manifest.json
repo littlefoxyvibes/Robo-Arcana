@@ -3,7 +3,7 @@
   "dir": "ltr",
   "display": "standalone",
   "name": "com.github.roboarcana",
-  "orientation": "any",
+  "orientation": "landscape",
   "scope": "/Robo-Arcana",
   "short_name": "roboarcana",
   "start_url": "/Robo-Arcana/index.html",
