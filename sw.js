@@ -1,4 +1,4 @@
-const CACHE_NAME = 'robo-arcana-v3';
+const CACHE_NAME = 'robo-arcana-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
