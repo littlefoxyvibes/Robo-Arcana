@@ -559,6 +559,13 @@ function loadGameFromStorage() {
     if (raw) {
       parseAndApplySave(raw);
       document.getElementById('hero-name-input').value = heroName;
+    } else {
+      currentLevel = 1;
+      mana = 0;
+      weapons.forEach((w, i) => w.unlocked = (i === 0));
+      armorUpgrades = { nanoArmor: false, jetpack: false, jetpackFuel: 100, maxFuel: 100, dualShield: false };
+      heroName = "ROBO-1";
+      document.getElementById('hero-name-input').value = heroName;
     }
   } catch(e) {}
 }
@@ -566,8 +573,8 @@ function loadGameFromStorage() {
 function parseAndApplySave(rawCode) {
   try {
     const data = JSON.parse(atob(rawCode.trim()));
-    currentLevel = data.l; mana = data.m;
-    data.w.forEach((unl, i) => { if (weapons[i]) weapons[i].unlocked = (unl === 1); });
+    currentLevel = data.l || 1; mana = data.m || 0;
+    if (data.w) data.w.forEach((unl, i) => { if (weapons[i]) weapons[i].unlocked = (unl === 1); });
     armorUpgrades.nanoArmor = (data.a === 1); armorUpgrades.jetpack = (data.j === 1);
     armorUpgrades.dualShield = (data.ds === 1);
     armorUpgrades.maxFuel = data.mf || 100;
@@ -944,19 +951,20 @@ class Monster {
 
     if (this.type === 'boss') {
       canShoot = true;
-      cooldown = 150;
+      cooldown = 160;
     } else if (level >= 10 && this.type === 'exploding_blue') {
       canShoot = true;
-      cooldown = 220;
+      cooldown = 240;
     } else if (level >= 20 && (this.type === 'flyer' || this.type === 'figure8_flyer')) {
       canShoot = true;
-      cooldown = 200;
+      cooldown = 220;
     } else if (level >= 30) {
       canShoot = true;
-      cooldown = 180;
+      cooldown = 200;
     }
 
-    if (canShoot) {
+    let distToPlayer = Math.hypot(player.x - this.x, player.y - this.y);
+    if (canShoot && distToPlayer < 750) {
       this.shootTimer++;
       if (this.shootTimer % cooldown === 0) {
         let pDir = player.x > this.x ? 1 : -1;
@@ -985,10 +993,15 @@ class Monster {
 }
 
 class EnemyProjectile {
-  constructor(x, y, dir) { this.x = x; this.y = y; this.dir = dir; this.speed = 6; }
+  constructor(x, y, dir) { 
+    this.startX = x;
+    this.x = x; this.y = y; this.dir = dir; this.speed = 5.5; 
+    this.maxDistance = 600;
+  }
   update() { this.x += this.speed * this.dir; }
+  isExpired() { return Math.abs(this.x - this.startX) >= this.maxDistance; }
   draw(camX, camY) {
-    ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(this.x - camX, this.y - camY, 5, 0, Math.PI * 2); ctx.fill();
   }
 }
 
@@ -1648,6 +1661,10 @@ function gameLoop() {
       if (gameState === 'PLAYING' && Math.abs(ep.x - (player.x + 15)) < 20 && Math.abs(ep.y - (player.y + 20)) < 20) {
         player.takeDamage(12);
         enemyProjectiles.splice(i, 1);
+        continue;
+      }
+      if (ep.isExpired()) {
+        enemyProjectiles.splice(i, 1);
       }
     }
 
@@ -1703,26 +1720,27 @@ function gameLoop() {
 
     if (screenShake > 0) ctx.restore();
 
-    ctx.fillStyle = '#0f0f2d'; ctx.fillRect(10, 60, 250, 96);
-    ctx.strokeStyle = '#00f3ff'; ctx.strokeRect(10, 60, 250, 96);
-    ctx.fillStyle = 'red'; ctx.fillRect(18, 68, 204, 10);
-    ctx.fillStyle = '#00ff66'; ctx.fillRect(18, 68, 204 * (player.hp / player.maxHp), 10);
+    ctx.fillStyle = '#0f0f2d'; ctx.fillRect(10, 56, 230, 86);
+    ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 1.5; ctx.strokeRect(10, 56, 230, 86);
+    
+    ctx.fillStyle = 'red'; ctx.fillRect(18, 64, 194, 8);
+    ctx.fillStyle = '#00ff66'; ctx.fillRect(18, 64, 194 * (player.hp / player.maxHp), 8);
 
     if (armorUpgrades.jetpack) {
-      ctx.fillStyle = '#333'; ctx.fillRect(18, 81, 204, 6);
-      ctx.fillStyle = '#ffaa00'; ctx.fillRect(18, 81, 204 * (armorUpgrades.jetpackFuel / armorUpgrades.maxFuel), 6);
+      ctx.fillStyle = '#333'; ctx.fillRect(18, 75, 194, 5);
+      ctx.fillStyle = '#ffaa00'; ctx.fillRect(18, 75, 194 * (armorUpgrades.jetpackFuel / armorUpgrades.maxFuel), 5);
     }
 
-    ctx.fillStyle = '#fff'; ctx.font = '11px monospace';
-    ctx.fillText(`${heroName} | LEVEL: ${currentLevel}/50`, 18, 100);
-    ctx.fillText(`MANA: ${mana} | WPN: ${weapons[currentWeaponIdx].name}`, 18, 114);
+    ctx.fillStyle = '#fff'; ctx.font = '10px monospace';
+    ctx.fillText(`${heroName} | LEVEL: ${currentLevel}/50`, 18, 92);
+    ctx.fillText(`MANA: ${mana} | WPN: ${weapons[currentWeaponIdx].name}`, 18, 106);
     
-    ctx.fillText(`KEYS:`, 18, 130);
+    ctx.fillText(`KEYS:`, 18, 122);
     for (let k = 0; k < reqKeys; k++) {
-      let kx = 62 + k * 18;
+      let kx = 60 + k * 16;
       ctx.fillStyle = k < player.collectedKeys ? keyColors[k % keyColors.length] : '#333355';
-      ctx.fillRect(kx, 121, 12, 12);
-      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(kx, 121, 12, 12);
+      ctx.fillRect(kx, 114, 11, 11);
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(kx, 114, 11, 11);
     }
   }
 
@@ -1738,11 +1756,9 @@ requestAnimationFrame(gameLoop);
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').then((registration) => {
-          // Force a check for a updated sw.js file on page load
           registration.update();
         });
 
-        // Automatically refresh the page when the new worker takes control
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           if (!refreshing) {
